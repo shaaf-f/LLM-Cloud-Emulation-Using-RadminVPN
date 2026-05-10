@@ -1,32 +1,37 @@
 import requests
 
-# The Radmin IP of your Cloud PC
+# TODO: Change this to the Radmin IP of your Cloud PC!
 RADMIN_IP = "26.65.113.255" 
-URL = f"http://{RADMIN_IP}:8000/api/ask-db"
+PORT = "8000"
+URL = f"http://{RADMIN_IP}:{PORT}/test-connection"
 
-# Define available models for easy switching
-available_models = ["sqlcoder:7b", "qwen2.5-coder:7b"]
-selected_model = available_models[1] # Change index to switch
+print("========================================")
+print(f" Interface Terminal -> Connecting to {RADMIN_IP}")
+print("========================================")
 
-def send_query(user_query):
-    # We pass the model name in the headers
-    headers = {
-        "X-LLM-Model": selected_model 
-    }
+while True:
+    user_query = input("\nEnter your query (or type 'exit' to quit): ")
     
-    payload = {
-        "question": user_query
-    }
+    if user_query.strip().lower() == 'exit':
+        print("Closing interface...")
+        break
+        
+    if not user_query.strip():
+        continue
 
+    print("Sending to Cloud PC...")
     try:
-        response = requests.post(URL, json=payload, headers=headers, timeout=180)
-        response.raise_for_status()
-        return response.json()
+        # Send the POST request to the Cloud PC
+        response = requests.post(URL, json={"query": user_query}, timeout=5)
+        response.raise_for_status() # Check for HTTP errors
+        
+        # Parse and print the response
+        data = response.json()
+        print(f"[CLOUD RESPONSE]: {data['reply']}")
+        
+    except requests.exceptions.ConnectionError:
+        print("\n[ERROR] Connection refused! Is the server running and is the Firewall open?")
+    except requests.exceptions.Timeout:
+        print("\n[ERROR] Connection timed out. The Radmin IP might be wrong or blocked.")
     except Exception as e:
-        return {"error": str(e)}
-
-# Example usage
-query = "How many Honda cars are there?"
-result = send_query(query)
-print(f"Model used: {result.get('model_used')}")
-print(f"Result: {result}")
+        print(f"\n[ERROR] Something went wrong: {e}")
